@@ -1,187 +1,84 @@
-"""Optimized mouse controller with minimal latency.
+"""Mouse control with gesture detection."""
 
-Handles mouse movement and clicking using exponential moving average
-for smooth, responsive control.
-"""
-
-import numpy as np
 import pyautogui
-
+import numpy as np
+from typing import Optional
+from config.settings import Config
 
 class MouseController:
-    """Ultra-fast mouse control with optimized smoothing."""
-    
-    def __init__(self, sensitivity=2.0, smoothing_factor=0.3, 
-                 deadzone_x=0.15, deadzone_y=0.15):
-        """Initialize mouse controller.
-        
-        Args:
-            sensitivity: Movement multiplier (1.0-3.0)
-            smoothing_factor: EMA smoothing (0.1-0.5, lower=smoother)
-            deadzone_x: Horizontal edge deadzone (0.0-0.3)
-            deadzone_y: Vertical edge deadzone (0.0-0.3)
-        """
-        print("Initializing Mouse Controller...")
-        
-        self.sensitivity = sensitivity
-        self.smoothing_factor = smoothing_factor
+    def __init__(self, config: Config):
+        self.config = config
         self.enabled = False
-        
-        # Screen dimensions
         self.screen_w, self.screen_h = pyautogui.size()
         
-        # Deadzones for edge stability
-        self.deadzone_x = deadzone_x
-        self.deadzone_y = deadzone_y
+        # Smoothing state
+        self._ema_x: Optional[float] = None
+        self._ema_y: Optional[float] = None
         
-        # Exponential moving average for smoothing
-        self.ema_x = None
-        self.ema_y = None
+        # Click state
+        self._is_clicking = False
+        self._click_cooldown = 0
         
-        # Dead zone to ignore tiny movements
-        self.dead_zone = 0.002
-        self.last_raw_x = None
-        self.last_raw_y = None
-        
-        # Click detection state
-        self.is_clicking = False
-        self.click_cooldown = 0
-        self.click_threshold = 0.05
-        self.release_threshold = 0.07
-        
-        # Disable PyAutoGUI failsafe and pause for performance
+        # PyAutoGUI settings
         pyautogui.FAILSAFE = False
         pyautogui.PAUSE = 0
-        
-        print(f"Screen: {self.screen_w}x{self.screen_h}")
-        print(f"Sensitivity: {sensitivity}")
-        print(f"Smoothing: {smoothing_factor}")
-        print(f"Deadzones: X={deadzone_x:.2f}, Y={deadzone_y:.2f}")
-        print("Mouse Controller initialized\n")
     
-    def _apply_deadzone(self, x, y):
-        """Apply deadzone mapping to normalized coordinates.
-        
-        Args:
-            x: Normalized x position (0-1)
-            y: Normalized y position (0-1)
-            
-        Returns:
-            tuple: Remapped (x, y) coordinates
-        """
-        # Map input range to exclude deadzones
-        # Input 0.0-1.0 -> Output deadzone_x to (1-deadzone_x)
-        x_range = 1.0 - 2 * self.deadzone_x
-        y_range = 1.0 - 2 * self.deadzone_y
-        
-        # Clamp and remap
-        x_clamped = np.clip(x, self.deadzone_x, 1.0 - self.deadzone_x)
-        y_clamped = np.clip(y, self.deadzone_y, 1.0 - self.deadzone_y)
-        
-        x_mapped = (x_clamped - self.deadzone_x) / x_range
-        y_mapped = (y_clamped - self.deadzone_y) / y_range
-        
-        return x_mapped, y_mapped
+    def toggle(self):
+        """Toggle mouse control."""
+        self.enabled = not self.enabled
+        self._ema_x = self._ema_y = None
     
-    def move_mouse(self, x, y):
-        """Move mouse to normalized hand coordinates.
-        
-        Args:
-            x: Normalized x position (0-1)
-            y: Normalized y position (0-1)
-        """
+    def move_cursor(self, hand_landmarks):
+        """Move cursor based on thumb position."""
         if not self.enabled:
             return
         
-        # Apply dead zone
-        if self.last_raw_x is not None:
-            dx = abs(x - self.last_raw_x)
-            dy = abs(y - self.last_raw_y)
-            
-            if dx < self.dead_zone and dy < self.dead_zone:
-                return
+        thumb = hand_landmarks.landmark[4]
+        x = np.clip(thumb.x, self.config.DEADZONE_X, 1.0 - self.config.DEADZONE_X)
+        y = np.clip(thumb.y, self.config.DEADZONE_Y, 1.0 - self.config.DEADZONE_Y)
         
-        self.last_raw_x = x
-        self.last_raw_y = y
+        # Normalize to deadzone
+        x_range = 1.0 - 2 * self.config.DEADZONE_X
+        y_range = 1.0 - 2 * self.config.DEADZONE_Y
+        x = (x - self.config.DEADZONE_X) / x_range
+        y = (y - self.config.DEADZONE_Y) / y_range
         
-        # Apply deadzone mapping
-        x_mapped, y_mapped = self._apply_deadzone(x, y)
+        # Screen coordinates
+        screen_x = x * self.screen_w
+        screen_y = y * self.screen_h
         
-        # Convert to screen coordinates
-        screen_x = x_mapped * self.screen_w
-        screen_y = y_mapped * self.screen_h
-        
-        # Apply exponential moving average
-        effective_smoothing = self.smoothing_factor / self.sensitivity
-        if self.ema_x is None:
-            self.ema_x = screen_x
-            self.ema_y = screen_y
+        # Exponential smoothing
+        alpha = self.config.SMOOTHING / self.config.DEFAULT_SENSITIVITY
+        if self._ema_x is None:
+            self._ema_x, self._ema_y = screen_x, screen_y
         else:
-            self.ema_x = effective_smoothing * screen_x + (1 - effective_smoothing) * self.ema_x
-            self.ema_y = effective_smoothing * screen_y + (1 - effective_smoothing) * self.ema_y
+            self._ema_x = alpha * screen_x + (1 - alpha) * self._ema_x
+            self._ema_y = alpha * screen_y + (1 - alpha) * self._ema_y
         
-        # Clamp to screen bounds
-        final_x = int(np.clip(self.ema_x, 0, self.screen_w - 1))
-        final_y = int(np.clip(self.ema_y, 0, self.screen_h - 1))
+        # Move cursor
+        final_x = int(np.clip(self._ema_x, 0, self.screen_w - 1))
+        final_y = int(np.clip(self._ema_y, 0, self.screen_h - 1))
         
-        # Move mouse instantly
         try:
             pyautogui.moveTo(final_x, final_y, duration=0, _pause=False)
-        except Exception as e:
-            print(f"Mouse move error: {e}")
+        except:
+            pass
     
-    def handle_click(self, pinch_distance):
-        """Handle click detection with hysteresis.
-        
-        Args:
-            pinch_distance: Distance between thumb and index finger
-            
-        Returns:
-            bool: True if click just occurred
-        """
+    def handle_click(self, pinch_distance: float):
+        """Handle click with hysteresis."""
         if not self.enabled:
-            return False
+            return
         
-        just_clicked = False
+        if self._click_cooldown > 0:
+            self._click_cooldown -= 1
+            return
         
-        if self.click_cooldown > 0:
-            self.click_cooldown -= 1
-        
-        # Hysteresis: different thresholds for press and release
-        if not self.is_clicking:
-            if pinch_distance < self.click_threshold and self.click_cooldown == 0:
-                self.is_clicking = True
-                just_clicked = True
-                self.click_cooldown = 10
-                
-                try:
-                    pyautogui.click()
-                except Exception:
-                    pass
-        else:
-            if pinch_distance > self.release_threshold:
-                self.is_clicking = False
-        
-        return just_clicked
-    
-    def toggle_enabled(self):
-        """Toggle mouse control on/off and reset state."""
-        self.enabled = not self.enabled
-        
-        # Reset state when toggling
-        self.ema_x = None
-        self.ema_y = None
-        self.last_raw_x = None
-        self.last_raw_y = None
-        self.is_clicking = False
-        self.click_cooldown = 0
-        
-        status = "ENABLED ✓" if self.enabled else "DISABLED"
-        separator = "=" * 50
-        print(f"\n{separator}")
-        print(f"Mouse control: {status}")
-        if self.enabled:
-            print("Move your thumb to control the cursor!")
-        print(f"{separator}\n")
-        
-        return self.enabled
+        if not self._is_clicking and pinch_distance < self.config.CLICK_THRESHOLD:
+            self._is_clicking = True
+            self._click_cooldown = self.config.CLICK_COOLDOWN
+            try:
+                pyautogui.click()
+            except:
+                pass
+        elif self._is_clicking and pinch_distance > self.config.CLICK_THRESHOLD * 1.5:
+            self._is_clicking = False
