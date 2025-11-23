@@ -24,6 +24,7 @@ class MouseController:
         self._toggle_start_time: Optional[float] = None
         self._toggle_in_progress = False
         self.toggle_progress = 0.0
+        self._toggle_completed = False  # Flag to prevent multiple toggles
         
         # PyAutoGUI settings
         pyautogui.FAILSAFE = False
@@ -40,21 +41,22 @@ class MouseController:
             if self._toggle_start_time is None:
                 self._toggle_start_time = time.time()
                 self._toggle_in_progress = True
+                self._toggle_completed = False
             
             elapsed = time.time() - self._toggle_start_time
             self.toggle_progress = min(1.0, elapsed / self.config.TOGGLE_DURATION)
             
             # Toggle completed
-            if elapsed >= self.config.TOGGLE_DURATION:
-                self._toggle_start_time = None
-                self._toggle_in_progress = False
-                self.toggle_progress = 0.0
+            if elapsed >= self.config.TOGGLE_DURATION and not self._toggle_completed:
+                self._toggle_completed = True
                 return True
         else:
             # Reset if pinch released
-            self._toggle_start_time = None
-            self._toggle_in_progress = False
-            self.toggle_progress = 0.0
+            if self._toggle_in_progress:
+                self._toggle_start_time = None
+                self._toggle_in_progress = False
+                self._toggle_completed = False
+                self.toggle_progress = 0.0
         
         return False
     
@@ -62,6 +64,11 @@ class MouseController:
         """Toggle mouse control."""
         self.enabled = not self.enabled
         self._ema_x = self._ema_y = None
+        # Reset toggle state after toggle
+        self._toggle_start_time = None
+        self._toggle_in_progress = False
+        self._toggle_completed = False
+        self.toggle_progress = 0.0
     
     def move_cursor(self, hand_landmarks):
         """Move cursor based on thumb position."""
@@ -116,6 +123,7 @@ class MouseController:
             self._click_cooldown -= 1
             return
         
+        # Click threshold should be higher than toggle threshold
         if not self._is_clicking and pinch_distance < self.config.CLICK_THRESHOLD:
             self._is_clicking = True
             self._click_cooldown = self.config.CLICK_COOLDOWN
