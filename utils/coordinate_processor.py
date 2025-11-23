@@ -2,7 +2,6 @@
 
 import numpy as np
 
-
 class CoordinateProcessor:
     """Fast coordinate processing with smoothing and dead zone."""
     

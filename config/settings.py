@@ -21,7 +21,9 @@ class Config:
     # Gesture thresholds
     CLICK_THRESHOLD = 0.05
     CLICK_COOLDOWN = 10
+    TOGGLE_THRESHOLD = 0.04
+    TOGGLE_DURATION = 5.0  # seconds
     
     # GUI settings
     GUI_WIDTH = 400
-    GUI_HEIGHT = 400
+    GUI_HEIGHT = 500

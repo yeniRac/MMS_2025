@@ -2,6 +2,7 @@
 
 import pyautogui
 import numpy as np
+import time
 from typing import Optional
 from config.settings import Config
 
@@ -19,9 +20,43 @@ class MouseController:
         self._is_clicking = False
         self._click_cooldown = 0
         
+        # Toggle state (hold pinch for 5 seconds)
+        self._toggle_start_time: Optional[float] = None
+        self._toggle_in_progress = False
+        self.toggle_progress = 0.0
+        
         # PyAutoGUI settings
         pyautogui.FAILSAFE = False
         pyautogui.PAUSE = 0
+    
+    def check_toggle_gesture(self, pinch_distance: float) -> bool:
+        """Check for toggle gesture (hold tight pinch for 5 seconds).
+        
+        Returns:
+            True if toggle should occur
+        """
+        # Very tight pinch for toggle (tighter than click)
+        if pinch_distance < self.config.TOGGLE_THRESHOLD:
+            if self._toggle_start_time is None:
+                self._toggle_start_time = time.time()
+                self._toggle_in_progress = True
+            
+            elapsed = time.time() - self._toggle_start_time
+            self.toggle_progress = min(1.0, elapsed / self.config.TOGGLE_DURATION)
+            
+            # Toggle completed
+            if elapsed >= self.config.TOGGLE_DURATION:
+                self._toggle_start_time = None
+                self._toggle_in_progress = False
+                self.toggle_progress = 0.0
+                return True
+        else:
+            # Reset if pinch released
+            self._toggle_start_time = None
+            self._toggle_in_progress = False
+            self.toggle_progress = 0.0
+        
+        return False
     
     def toggle(self):
         """Toggle mouse control."""
@@ -31,6 +66,10 @@ class MouseController:
     def move_cursor(self, hand_landmarks):
         """Move cursor based on thumb position."""
         if not self.enabled:
+            return
+        
+        # Don't move during toggle gesture
+        if self._toggle_in_progress:
             return
         
         thumb = hand_landmarks.landmark[4]
@@ -67,6 +106,10 @@ class MouseController:
     def handle_click(self, pinch_distance: float):
         """Handle click with hysteresis."""
         if not self.enabled:
+            return
+        
+        # Don't click during toggle gesture
+        if self._toggle_in_progress:
             return
         
         if self._click_cooldown > 0:

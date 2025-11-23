@@ -27,10 +27,14 @@ def main():
     print("HAND GESTURE MOUSE CONTROL")
     print("=" * 50)
     print("\nControls:")
-    print("  M = Toggle mouse control")
+    print("  M = Toggle mouse control (keyboard)")
+    print("  Hold tight pinch 5 seconds = Toggle mouse control (gesture)")
     print("  Q = Quit")
     print("  +/- = Adjust sensitivity")
     print("\nStarting...\n")
+    
+    # Track pinch state
+    pinch_distance = 0.0
     
     try:
         while True:
@@ -47,16 +51,31 @@ def main():
             
             # Process hand
             if hand:
+                pinch_distance = tracker.get_pinch_distance(hand)
+                
+                # Check for toggle gesture first
+                if mouse.check_toggle_gesture(pinch_distance):
+                    mouse.toggle()
+                    status = "ENABLED" if mouse.enabled else "DISABLED"
+                    print(f"\n{'='*50}")
+                    print(f"Mouse control TOGGLED by gesture: {status}")
+                    print(f"{'='*50}\n")
+                
+                # Then handle normal cursor and click
                 mouse.move_cursor(hand)
-                pinch_dist = tracker.get_pinch_distance(hand)
-                mouse.handle_click(pinch_dist)
+                mouse.handle_click(pinch_distance)
+            else:
+                pinch_distance = 0.0
             
             # Draw GUI
             gui_img = gui.draw_status(
                 mouse.enabled,
                 hand is not None,
                 config.DEFAULT_SENSITIVITY,
-                config.SMOOTHING
+                config.SMOOTHING,
+                pinch_distance,
+                mouse._is_clicking,
+                mouse.toggle_progress
             )
             cv2.imshow(gui.window_name, gui_img)
             
