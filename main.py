@@ -1,10 +1,28 @@
-"""Main application entry point."""
+"""Main application entry point with camera feed display."""
 
 import cv2
+import mediapipe as mp
 from config.settings import Config
 from src.hand_tracker import HandTracker
 from src.mouse_controller import MouseController
 from src.gui import StatusGUI
+
+def draw_hand_landmarks(frame, hand_landmarks):
+    """Draw hand landmarks and connections on frame."""
+    mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
+    
+    # Draw landmarks and connections
+    mp_drawing.draw_landmarks(
+        frame,
+        hand_landmarks,
+        mp_hands.HAND_CONNECTIONS,
+        mp_drawing_styles.get_default_hand_landmarks_style(),
+        mp_drawing_styles.get_default_hand_connections_style()
+    )
+    
+    return frame
 
 def main():
     """Run hand gesture mouse control."""
@@ -31,6 +49,7 @@ def main():
     print("  Hold VERY tight pinch 5 seconds = Toggle (gesture)")
     print("  Q = Quit")
     print("  Click and drag sliders in GUI to adjust settings")
+    print("  Click 'Show Camera Feed' button to view tracking")
     print("\nStarting...\n")
     
     # Track pinch state
@@ -68,6 +87,17 @@ def main():
                     mouse.handle_click(pinch_distance)
             else:
                 pinch_distance = 0.0
+            
+            # Display camera feed if enabled
+            if gui.show_camera:
+                camera_frame = frame.copy()
+                
+                # Draw hand landmarks if detected
+                if hand:
+                    camera_frame = draw_hand_landmarks(camera_frame, hand)
+                
+                # Show camera feed window
+                cv2.imshow(gui.camera_window_name, camera_frame)
             
             # Draw GUI (pass config values via gui object)
             gui_img = gui.draw_status(
