@@ -31,11 +31,11 @@ class StatusGUI:
         
         # Window dimensions - larger and more comfortable
         self.width = 500
-        self.height = 750
+        self.height = 820
         
         # Layout constants
         self.margin = 24
-        self.section_spacing = 18
+        self.section_spacing = 20
         self.item_spacing = 28
         
         # FPS tracking
@@ -169,7 +169,7 @@ class StatusGUI:
         current_time = time.time()
         
         for name, slider in self.sliders.items():
-            slider_track_y = slider['y'] + 24  # Adjusted for tighter spacing
+            slider_track_y = slider['y'] + 28
             if slider_track_y > 0 and abs(y - slider_track_y) < 15:
                 # Check for double-click
                 if (self.last_clicked_slider == name and 
@@ -266,7 +266,6 @@ class StatusGUI:
         
         # Draw toggle gesture section
         y = self._draw_toggle_section(canvas, y, toggle_progress)
-        y += self.section_spacing
         
         # Draw camera button
         y = self._draw_camera_button(canvas, y)
@@ -287,11 +286,11 @@ class StatusGUI:
     
     def _draw_header(self, canvas: np.ndarray, y: int) -> int:
         """Draw the header section."""
-        y += 10  # Extra space at top
+        y += 8
         
         self._draw_text(canvas, "Hand Gesture Mouse Control",
                        self.margin, y, self.text_primary, 0.8, 2)
-        y += 35
+        y += 32
         
         # Draw FPS in top right
         fps_text = f"FPS: {self.fps:.0f}"
@@ -303,7 +302,7 @@ class StatusGUI:
         
         # Draw separator line
         self._draw_separator(canvas, y)
-        y += 15
+        y += self.section_spacing
         
         return y
     
@@ -314,7 +313,7 @@ class StatusGUI:
         # Section title
         self._draw_text(canvas, "Status", self.margin, y,
                        self.text_secondary, 0.55, 1)
-        y += 25
+        y += 26
         
         # Mouse control status
         y = self._draw_status_item(canvas, "Mouse Control", y,
@@ -334,10 +333,10 @@ class StatusGUI:
         # Click indicator
         if is_clicking:
             indicator_x = self.width - self.margin - 100
-            self._draw_pill(canvas, "CLICKING", indicator_x, y - self.item_spacing + 3,
+            self._draw_pill(canvas, "CLICKING", indicator_x, y - self.item_spacing + 5,
                           self.accent_primary, self.text_primary)
         
-        y += self.section_spacing - self.item_spacing
+        y += 4
         self._draw_separator(canvas, y)
         y += self.section_spacing
         
@@ -349,17 +348,17 @@ class StatusGUI:
         # Section title
         self._draw_text(canvas, "Toggle Gesture", self.margin, y,
                        self.text_secondary, 0.55, 1)
-        y += 25
+        y += 26
         
         # Description
         self._draw_text(canvas, "Hold a tight pinch for 5 seconds to toggle control",
                        self.margin, y, self.text_disabled, 0.45, 1)
-        y += 25
+        y += 26
         
         # Progress bar
         bar_width = self.width - 2 * self.margin
         y = self._draw_progress_bar(canvas, toggle_progress, self.margin, y, bar_width)
-        y += self.section_spacing
+        y += 16
         
         self._draw_separator(canvas, y)
         y += self.section_spacing
@@ -393,16 +392,16 @@ class StatusGUI:
         self._draw_text(canvas, "Double-click to reset", 
                        self.width - self.margin - hint_width, y,
                        self.text_disabled, 0.4, 1)
-        y += 25
+        y += 26
         
         # Draw all sliders
         for name, slider in self.sliders.items():
-            slider['y'] = y + 10  # Store for click detection
+            slider['y'] = y + 10
             y = self._draw_slider(canvas, slider, self.margin, y,
                                  name == self.dragging_slider)
-            y += 8  # Spacing between sliders
+            y += 10
         
-        y += self.section_spacing - 8
+        y += 10
         self._draw_separator(canvas, y)
         y += self.section_spacing
         
@@ -413,7 +412,7 @@ class StatusGUI:
         # Section title
         self._draw_text(canvas, "Keyboard Shortcuts", self.margin, y,
                        self.text_secondary, 0.55, 1)
-        y += 25
+        y += 26
         
         # Shortcuts
         shortcuts = [
@@ -423,7 +422,7 @@ class StatusGUI:
         
         for key, description in shortcuts:
             y = self._draw_shortcut(canvas, key, description, self.margin, y)
-            y += 8  # Consistent spacing between shortcuts
+            y += 10
         
         return y
     
@@ -495,7 +494,6 @@ class StatusGUI:
         # Progress fill
         filled_width = int(width * progress)
         if filled_width > 0:
-            # Use consistent blue color
             fill_color = self.accent_primary
             
             cv2.rectangle(canvas, (x, y), (x + filled_width, y + height),
@@ -517,12 +515,12 @@ class StatusGUI:
         # Label
         self._draw_text(canvas, slider['label'], x, y,
                        self.text_primary, 0.5, 1)
-        y += 16
+        y += 18
         
         # Description
         self._draw_text(canvas, slider['description'], x, y,
                        self.text_disabled, 0.4, 1)
-        y += 18
+        y += 20
         
         # Slider track
         slider_x = x + 160
@@ -560,7 +558,7 @@ class StatusGUI:
         self._draw_text(canvas, value_text, value_x, y,
                        self.text_primary, 0.5, 1)
         
-        return y + 26
+        return y + 28
     
     def _draw_shortcut(self, canvas: np.ndarray, key: str,
                       description: str, x: int, y: int) -> int:
