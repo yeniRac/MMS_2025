@@ -1,4 +1,4 @@
-"""Mouse control with snappy click detection."""
+"""Mouse control with relative movement (like a real mouse)."""
 
 import pyautogui
 import numpy as np
@@ -12,13 +12,18 @@ class MouseController:
         self.enabled = False
         self.screen_w, self.screen_h = pyautogui.size()
         
-        # Smoothing state
-        self._ema_x: Optional[float] = None
-        self._ema_y: Optional[float] = None
+        # Relative movement tracking
+        self._last_x: Optional[float] = None
+        self._last_y: Optional[float] = None
+        self._center_x = 0.5  # Center reference point
+        self._center_y = 0.5
+        
+        # Smoothing for delta values
+        self._smoothed_dx = 0.0
+        self._smoothed_dy = 0.0
         
         # Enhanced click state
         self._is_clicking = False
-        self._click_cooldown = 0
         self._last_distance = None
         self._distance_velocity = 0.0
         
@@ -57,8 +62,20 @@ class MouseController:
     
     def toggle(self):
         """Toggle mouse control."""
+        # Release mouse button if held when toggling off
+        if self.enabled and self._is_clicking:
+            try:
+                pyautogui.mouseUp()
+            except:
+                pass
+        
         self.enabled = not self.enabled
-        self._ema_x = self._ema_y = None
+        # Reset tracking state
+        self._last_x = None
+        self._last_y = None
+        self._smoothed_dx = 0.0
+        self._smoothed_dy = 0.0
+        self._is_clicking = False
         self._last_distance = None
         self._distance_velocity = 0.0
         self._toggle_start_time = None
@@ -67,44 +84,64 @@ class MouseController:
         self.toggle_progress = 0.0
     
     def move_cursor(self, hand_landmarks):
-        """Move cursor based on thumb position."""
+        """Move cursor using RELATIVE movement (like a real mouse)."""
         if not self.enabled or self._toggle_in_progress:
             return
         
+        # Get thumb position (normalized 0-1)
         thumb = hand_landmarks.landmark[4]
-        x = np.clip(thumb.x, self.config.DEADZONE_X, 1.0 - self.config.DEADZONE_X)
-        y = np.clip(thumb.y, self.config.DEADZONE_Y, 1.0 - self.config.DEADZONE_Y)
+        current_x = thumb.x
+        current_y = thumb.y
         
-        # Normalize to deadzone
-        x_range = 1.0 - 2 * self.config.DEADZONE_X
-        y_range = 1.0 - 2 * self.config.DEADZONE_Y
-        x = (x - self.config.DEADZONE_X) / x_range
-        y = (y - self.config.DEADZONE_Y) / y_range
+        # Apply deadzone around center
+        dx_raw = current_x - self._center_x
+        dy_raw = current_y - self._center_y
         
-        # Apply sensitivity
-        screen_x = x * self.screen_w * self.config.DEFAULT_SENSITIVITY
-        screen_y = y * self.screen_h * self.config.DEFAULT_SENSITIVITY
+        # Deadzone filter
+        if abs(dx_raw) < self.config.DEADZONE_X:
+            dx_raw = 0
+        if abs(dy_raw) < self.config.DEADZONE_Y:
+            dy_raw = 0
         
-        # Exponential smoothing
+        # If first frame, initialize and don't move
+        if self._last_x is None:
+            self._last_x = current_x
+            self._last_y = current_y
+            return
+        
+        # Calculate delta (change since last frame)
+        dx = current_x - self._last_x
+        dy = current_y - self._last_y
+        
+        # Update last position
+        self._last_x = current_x
+        self._last_y = current_y
+        
+        # Apply smoothing to deltas
         alpha = self.config.SMOOTHING
-        if self._ema_x is None:
-            self._ema_x, self._ema_y = screen_x, screen_y
-        else:
-            self._ema_x = alpha * screen_x + (1 - alpha) * self._ema_x
-            self._ema_y = alpha * screen_y + (1 - alpha) * self._ema_y
+        self._smoothed_dx = alpha * dx + (1 - alpha) * self._smoothed_dx
+        self._smoothed_dy = alpha * dy + (1 - alpha) * self._smoothed_dy
         
-        # Move cursor
-        final_x = int(np.clip(self._ema_x, 0, self.screen_w - 1))
-        final_y = int(np.clip(self._ema_y, 0, self.screen_h - 1))
+        # Scale by sensitivity and screen size
+        move_x = self._smoothed_dx * self.screen_w * self.config.DEFAULT_SENSITIVITY
+        move_y = self._smoothed_dy * self.screen_h * self.config.DEFAULT_SENSITIVITY
         
+        # Apply movement (relative to current position)
         try:
-            pyautogui.moveTo(final_x, final_y, duration=0, _pause=False)
+            pyautogui.moveRel(int(move_x), int(move_y), duration=0, _pause=False)
         except:
             pass
     
     def handle_click(self, pinch_distance: float):
-        """Handle click with velocity-based detection for snappiness."""
+        """Handle click and hold with stable detection."""
         if not self.enabled or self._toggle_in_progress:
+            # If disabled, make sure mouse is released
+            if self._is_clicking:
+                try:
+                    pyautogui.mouseUp()
+                except:
+                    pass
+                self._is_clicking = False
             return
         
         # Calculate velocity (rate of change)
@@ -112,27 +149,26 @@ class MouseController:
             self._distance_velocity = pinch_distance - self._last_distance
         self._last_distance = pinch_distance
         
-        # Cooldown handling
-        if self._click_cooldown > 0:
-            self._click_cooldown -= 1
-            return
+        # Use clear thresholds with hysteresis
+        press_threshold = self.config.CLICK_THRESHOLD
+        release_threshold = self.config.CLICK_THRESHOLD * 1.5  # More forgiving release
         
-        # Snappy click detection with velocity consideration
         if not self._is_clicking:
-            # Trigger click if:
-            # 1. Distance is below threshold, OR
-            # 2. Distance is approaching threshold quickly (negative velocity)
+            # Press down - use velocity for snappiness
             approaching_fast = self._distance_velocity < -0.01
-            at_threshold = pinch_distance < self.config.CLICK_THRESHOLD
+            at_threshold = pinch_distance < press_threshold
             
-            if at_threshold or (approaching_fast and pinch_distance < self.config.CLICK_THRESHOLD * 1.2):
-                self._is_clicking = True
-                self._click_cooldown = self.config.CLICK_COOLDOWN
+            if at_threshold or (approaching_fast and pinch_distance < press_threshold * 1.2):
                 try:
-                    pyautogui.click()
-                except:
-                    pass
+                    pyautogui.mouseDown()  # Press and HOLD
+                    self._is_clicking = True
+                except Exception as e:
+                    print(f"Error on mouseDown: {e}")
         else:
-            # Release with smaller hysteresis for snappier feel
-            if pinch_distance > self.config.CLICK_THRESHOLD * 1.3:
-                self._is_clicking = False
+            # Release - only when fingers clearly separate
+            if pinch_distance > release_threshold:
+                try:
+                    pyautogui.mouseUp()  # Release
+                    self._is_clicking = False
+                except Exception as e:
+                    print(f"Error on mouseUp: {e}")

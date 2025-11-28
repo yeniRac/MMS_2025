@@ -1,4 +1,4 @@
-"""Performance-optimized configuration with snappy click settings."""
+"""Configuration optimized for relative mouse movement."""
 
 class Config:
     # Camera settings
@@ -9,19 +9,18 @@ class Config:
     
     # MediaPipe settings
     MODEL_COMPLEXITY = 0  # Fastest
-    MIN_DETECTION_CONF = 0.5  # Slightly higher for stability
+    MIN_DETECTION_CONF = 0.5
     MIN_TRACKING_CONF = 0.5
     
-    # Mouse control
-    DEFAULT_SENSITIVITY = 2.0
-    SMOOTHING = 0.25  # Less smoothing for snappier feel
-    DEADZONE_X = 0.15
-    DEADZONE_Y = 0.15
+    # Mouse control - OPTIMIZED FOR RELATIVE MOVEMENT
+    DEFAULT_SENSITIVITY = 3.5  # Higher for relative movement
+    SMOOTHING = 0.35  # Moderate smoothing for relative deltas
+    DEADZONE_X = 0.08  # Smaller deadzone for center area
+    DEADZONE_Y = 0.08
     
-    # Gesture thresholds - OPTIMIZED FOR SNAPPY CLICKS
-    CLICK_THRESHOLD = 0.04  # Slightly lower for easier triggering
-    CLICK_COOLDOWN = 6  # Reduced cooldown for faster repeat clicks
-    TOGGLE_THRESHOLD = 0.20  # REDUCED from 0.25 - less spreading needed
+    # Gesture thresholds
+    CLICK_THRESHOLD = 0.045  # Slightly higher for more stable hold
+    TOGGLE_THRESHOLD = 0.20
     TOGGLE_DURATION = 2.0
     
     # GUI settings
