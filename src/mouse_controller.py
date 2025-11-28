@@ -84,14 +84,14 @@ class MouseController:
         self.toggle_progress = 0.0
     
     def move_cursor(self, hand_landmarks):
-        """Move cursor using RELATIVE movement (like a real mouse)."""
+        """Move cursor using RELATIVE movement (like a real mouse) - INDEX FINGER."""
         if not self.enabled or self._toggle_in_progress:
             return
         
-        # Get thumb position (normalized 0-1)
-        thumb = hand_landmarks.landmark[4]
-        current_x = thumb.x
-        current_y = thumb.y
+        # Get INDEX FINGER TIP position (landmark 8) instead of thumb
+        index_tip = hand_landmarks.landmark[8]
+        current_x = index_tip.x
+        current_y = index_tip.y
         
         # Apply deadzone around center
         dx_raw = current_x - self._center_x

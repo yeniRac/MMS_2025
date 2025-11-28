@@ -46,9 +46,11 @@ class HandTracker:
     
     @staticmethod
     def get_pinch_distance(hand_landmarks) -> float:
-        """Get thumb-index distance."""
-        thumb, index = hand_landmarks.landmark[4], hand_landmarks.landmark[8]
-        dx, dy = index.x - thumb.x, index.y - thumb.y
+        """Get thumb-MIDDLE FINGER distance (landmark 12)."""
+        thumb = hand_landmarks.landmark[4]
+        middle_tip = hand_landmarks.landmark[12]  # Changed from index (8) to middle finger (12)
+        dx = middle_tip.x - thumb.x
+        dy = middle_tip.y - thumb.y
         return np.sqrt(dx * dx + dy * dy)
     
     def cleanup(self):
