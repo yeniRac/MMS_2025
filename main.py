@@ -7,23 +7,6 @@ from src.hand_tracker import HandTracker
 from src.mouse_controller import MouseController
 from src.gui import StatusGUI
 
-def draw_hand_landmarks(frame, hand_landmarks):
-    """Draw hand landmarks and connections on frame."""
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
-    
-    # Draw landmarks and connections
-    mp_drawing.draw_landmarks(
-        frame,
-        hand_landmarks,
-        mp_hands.HAND_CONNECTIONS,
-        mp_drawing_styles.get_default_hand_landmarks_style(),
-        mp_drawing_styles.get_default_hand_connections_style()
-    )
-    
-    return frame
-
 def main():
     """Run hand gesture mouse control."""
     config = Config()
@@ -46,9 +29,10 @@ def main():
     print("=" * 50)
     print("\nControls:")
     print("  M = Toggle mouse control (keyboard)")
-    print("  Hold VERY tight pinch 5 seconds = Toggle (gesture)")
+    print("  Spread fingers moderately for 2 seconds = Toggle (gesture)")
     print("  Q = Quit")
     print("  Click and drag sliders in GUI to adjust settings")
+    print("  Double-click sliders to reset to defaults")
     print("  Click 'Show Camera Feed' button to view tracking")
     print("\nStarting...\n")
     
@@ -92,9 +76,52 @@ def main():
             if gui.show_camera:
                 camera_frame = frame.copy()
                 
-                # Draw hand landmarks if detected
+                # Draw only thumb and index landmarks for clarity
                 if hand:
-                    camera_frame = draw_hand_landmarks(camera_frame, hand)
+                    thumb_pos = hand.landmark[4]
+                    index_pos = hand.landmark[8]
+                    
+                    h, w = camera_frame.shape[:2]
+                    thumb_px = (int(thumb_pos.x * w), int(thumb_pos.y * h))
+                    index_px = (int(index_pos.x * w), int(index_pos.y * h))
+                    
+                    # Draw smaller circles for thumb and index
+                    circle_color = (0, 255, 0) if mouse._is_clicking else (66, 133, 244)
+                    cv2.circle(camera_frame, thumb_px, 6, circle_color, -1)  # REDUCED from 12 to 6
+                    cv2.circle(camera_frame, index_px, 6, circle_color, -1)  # REDUCED from 12 to 6
+                    cv2.circle(camera_frame, thumb_px, 6, (255, 255, 255), 1)  # REDUCED border thickness
+                    cv2.circle(camera_frame, index_px, 6, (255, 255, 255), 1)  # REDUCED border thickness
+                    
+                    # Draw thinner line between them
+                    line_color = (0, 255, 0) if mouse._is_clicking else (66, 133, 244)
+                    cv2.line(camera_frame, thumb_px, index_px, line_color, 2)  # REDUCED from 3 to 2
+                    
+                    # Draw status info
+                    info_y = 30
+                    
+                    # Click indicator
+                    if mouse._is_clicking:
+                        cv2.putText(camera_frame, "CLICKING!", (10, info_y),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
+                        info_y += 35
+                    
+                    # Distance indicator
+                    distance_text = f"Distance: {pinch_distance:.3f}"
+                    cv2.putText(camera_frame, distance_text, (10, info_y),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    info_y += 25
+                    
+                    # Threshold indicator
+                    threshold_text = f"Threshold: {config.CLICK_THRESHOLD:.3f}"
+                    cv2.putText(camera_frame, threshold_text, (10, info_y),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1, cv2.LINE_AA)
+                    
+                    # Velocity indicator (for debugging)
+                    if mouse._distance_velocity is not None:
+                        velocity_text = f"Velocity: {mouse._distance_velocity:.4f}"
+                        velocity_color = (0, 255, 255) if mouse._distance_velocity < -0.01 else (200, 200, 200)
+                        cv2.putText(camera_frame, velocity_text, (10, h - 20),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, velocity_color, 1, cv2.LINE_AA)
                 
                 # Show camera feed window
                 cv2.imshow(gui.camera_window_name, camera_frame)
