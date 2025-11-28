@@ -8,18 +8,18 @@ class Config:
     CAMERA_FPS = 60
     
     # MediaPipe settings
-    MODEL_COMPLEXITY = 0  # Fastest
+    MODEL_COMPLEXITY = 0 
     MIN_DETECTION_CONF = 0.5
     MIN_TRACKING_CONF = 0.5
     
-    # Mouse control - OPTIMIZED FOR RELATIVE MOVEMENT
-    DEFAULT_SENSITIVITY = 3.5  # Higher for relative movement
-    SMOOTHING = 0.35  # Moderate smoothing for relative deltas
-    DEADZONE_X = 0.08  # Smaller deadzone for center area
-    DEADZONE_Y = 0.08
+    # Mouse control 
+    DEFAULT_SENSITIVITY = 3.0  
+    SMOOTHING = 0.20 
+    DEADZONE_X = 0.00  
+    DEADZONE_Y = 0.00
     
     # Gesture thresholds
-    CLICK_THRESHOLD = 0.045  # Slightly higher for more stable hold
+    CLICK_THRESHOLD = 0.05  
     TOGGLE_THRESHOLD = 0.20
     TOGGLE_DURATION = 2.0
     
