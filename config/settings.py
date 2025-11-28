@@ -19,10 +19,10 @@ class Config:
     DEADZONE_Y = 0.15
     
     # Gesture thresholds
-    CLICK_THRESHOLD = 0.05
+    CLICK_THRESHOLD = 0.05  # Pinch to click
     CLICK_COOLDOWN = 10
-    TOGGLE_THRESHOLD = 0.035  # Even tighter than click
-    TOGGLE_DURATION = 5.0  # seconds
+    TOGGLE_THRESHOLD = 0.25  # Spread fingers wide to toggle (much larger distance)
+    TOGGLE_DURATION = 2.0  # seconds (reduced from 5 to 2)
     
     # GUI settings
     GUI_WIDTH = 600

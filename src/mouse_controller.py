@@ -20,7 +20,7 @@ class MouseController:
         self._is_clicking = False
         self._click_cooldown = 0
         
-        # Toggle state (hold pinch for 5 seconds)
+        # Toggle state (spread fingers for 2 seconds)
         self._toggle_start_time: Optional[float] = None
         self._toggle_in_progress = False
         self.toggle_progress = 0.0
@@ -31,13 +31,13 @@ class MouseController:
         pyautogui.PAUSE = 0
     
     def check_toggle_gesture(self, pinch_distance: float) -> bool:
-        """Check for toggle gesture (hold tight pinch for 5 seconds).
+        """Check for toggle gesture (spread fingers wide for 2 seconds).
         
         Returns:
             True if toggle should occur
         """
-        # Very tight pinch for toggle (tighter than click)
-        if pinch_distance < self.config.TOGGLE_THRESHOLD:
+        # Wide spread for toggle (fingers far apart)
+        if pinch_distance > self.config.TOGGLE_THRESHOLD:
             if self._toggle_start_time is None:
                 self._toggle_start_time = time.time()
                 self._toggle_in_progress = True
@@ -51,7 +51,7 @@ class MouseController:
                 self._toggle_completed = True
                 return True
         else:
-            # Reset if pinch released
+            # Reset if spread released
             if self._toggle_in_progress:
                 self._toggle_start_time = None
                 self._toggle_in_progress = False
@@ -89,12 +89,12 @@ class MouseController:
         x = (x - self.config.DEADZONE_X) / x_range
         y = (y - self.config.DEADZONE_Y) / y_range
         
-        # Screen coordinates
-        screen_x = x * self.screen_w
-        screen_y = y * self.screen_h
+        # Apply sensitivity to screen coordinates
+        screen_x = x * self.screen_w * self.config.DEFAULT_SENSITIVITY
+        screen_y = y * self.screen_h * self.config.DEFAULT_SENSITIVITY
         
         # Exponential smoothing
-        alpha = self.config.SMOOTHING / self.config.DEFAULT_SENSITIVITY
+        alpha = self.config.SMOOTHING
         if self._ema_x is None:
             self._ema_x, self._ema_y = screen_x, screen_y
         else:

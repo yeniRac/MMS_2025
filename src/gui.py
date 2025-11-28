@@ -328,7 +328,7 @@ class StatusGUI:
         # Pinch distance
         pinch_text = f"{pinch_distance:.3f}" if hand_detected else "---"
         pinch_color = self.accent_primary if is_clicking else self.accent_disabled
-        y = self._draw_status_item(canvas, "Pinch Distance", y, pinch_text, pinch_color)
+        y = self._draw_status_item(canvas, "Finger Distance", y, pinch_text, pinch_color)
         
         # Click indicator
         if is_clicking:
@@ -351,7 +351,7 @@ class StatusGUI:
         y += 26
         
         # Description
-        self._draw_text(canvas, "Hold a tight pinch for 5 seconds to toggle control",
+        self._draw_text(canvas, "Spread your fingers wide for 2 seconds to toggle",
                        self.margin, y, self.text_disabled, 0.45, 1)
         y += 26
         
