@@ -441,7 +441,7 @@ class StatusGUI:
         y += 26
         
         # Description
-        self._draw_text(canvas, "Spread your fingers wide for 2 seconds to toggle",
+        self._draw_text(canvas, "Spread your fingers to toggle mouse control",
                        self.margin, y, self.text_disabled, 0.45, 1)
         y += 26
         
