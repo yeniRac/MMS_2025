@@ -79,10 +79,10 @@ class StatusGUI:
             },
             'deadzone': {
                 'y': 0,
-                'value': config.DEADZONE_X,
-                'default': config.DEADZONE_X,
+                'value': config.DEADZONE_X * 100,
+                'default': config.DEADZONE_X * 100,
                 'min': 0.0,
-                'max': 0.3,
+                'max': 1.0,
                 'label': 'Deadzone',
                 'description': 'Minimum movement threshold'
             },
@@ -225,8 +225,8 @@ class StatusGUI:
         elif slider_name == 'smoothing':
             self.config.SMOOTHING = value
         elif slider_name == 'deadzone':
-            self.config.DEADZONE_X = value
-            self.config.DEADZONE_Y = value
+            self.config.DEADZONE_X = value / 100  # Scale down for actual use
+            self.config.DEADZONE_Y = value / 100
         elif slider_name == 'click_threshold':
             self.config.CLICK_THRESHOLD = value
     
@@ -401,7 +401,13 @@ class StatusGUI:
                                  name == self.dragging_slider)
             y += 10
         
-        y += 10
+        # Keyboard settings hint
+        y += 4
+        self._draw_text(canvas, "Keyboard: M = Toggle control  |  Q = Quit", 
+                       self.margin, y,
+                       self.text_disabled, 0.4, 1)
+        y += 16
+        
         self._draw_separator(canvas, y)
         y += self.section_spacing
         

@@ -1,4 +1,4 @@
-"""Mouse control with relative movement (like a real mouse)."""
+"""Mouse control with relative movement (like a real mouse) - OPTIMIZED."""
 
 import pyautogui
 import numpy as np
@@ -33,7 +33,12 @@ class MouseController:
         self.toggle_progress = 0.0
         self._toggle_completed = False
         
-        # PyAutoGUI settings
+        # Pre-calculated constants for performance
+        self._release_multiplier = 1.5
+        self._velocity_threshold = -0.01
+        self._press_multiplier = 1.2
+        
+        # PyAutoGUI settings - optimized
         pyautogui.FAILSAFE = False
         pyautogui.PAUSE = 0
     
@@ -64,10 +69,7 @@ class MouseController:
         """Toggle mouse control."""
         # Release mouse button if held when toggling off
         if self.enabled and self._is_clicking:
-            try:
-                pyautogui.mouseUp()
-            except:
-                pass
+            pyautogui.mouseUp()
         
         self.enabled = not self.enabled
         # Reset tracking state
@@ -93,17 +95,7 @@ class MouseController:
         current_x = thumb.x
         current_y = thumb.y
         
-        # Apply deadzone around center
-        dx_raw = current_x - self._center_x
-        dy_raw = current_y - self._center_y
-        
-        # Deadzone filter
-        if abs(dx_raw) < self.config.DEADZONE_X:
-            dx_raw = 0
-        if abs(dy_raw) < self.config.DEADZONE_Y:
-            dy_raw = 0
-        
-        # If first frame, initialize and don't move
+       # If first frame, initialize and don't move
         if self._last_x is None:
             self._last_x = current_x
             self._last_y = current_y
@@ -113,12 +105,18 @@ class MouseController:
         dx = current_x - self._last_x
         dy = current_y - self._last_y
         
+        # Apply deadzone to deltas
+        if abs(dx) < self.config.DEADZONE_X:
+            dx = 0
+        if abs(dy) < self.config.DEADZONE_Y:
+            dy = 0
+        
         # Update last position
         self._last_x = current_x
         self._last_y = current_y
         
-        # Apply smoothing to deltas
-        alpha = self.config.SMOOTHING
+        # Apply smoothing to deltas (inverted so higher = more smoothing)
+        alpha = 1.0 - self.config.SMOOTHING
         self._smoothed_dx = alpha * dx + (1 - alpha) * self._smoothed_dx
         self._smoothed_dy = alpha * dy + (1 - alpha) * self._smoothed_dy
         
@@ -127,20 +125,15 @@ class MouseController:
         move_y = self._smoothed_dy * self.screen_h * self.config.DEFAULT_SENSITIVITY
         
         # Apply movement (relative to current position)
-        try:
-            pyautogui.moveRel(int(move_x), int(move_y), duration=0, _pause=False)
-        except:
-            pass
+        # Removed try-except for performance - FAILSAFE=False makes this safe
+        pyautogui.moveRel(int(move_x), int(move_y), duration=0, _pause=False)
     
     def handle_click(self, pinch_distance: float):
         """Handle click and hold with stable detection."""
         if not self.enabled or self._toggle_in_progress:
             # If disabled, make sure mouse is released
             if self._is_clicking:
-                try:
-                    pyautogui.mouseUp()
-                except:
-                    pass
+                pyautogui.mouseUp()
                 self._is_clicking = False
             return
         
@@ -149,26 +142,20 @@ class MouseController:
             self._distance_velocity = pinch_distance - self._last_distance
         self._last_distance = pinch_distance
         
-        # Use clear thresholds with hysteresis
+        # Use pre-calculated thresholds
         press_threshold = self.config.CLICK_THRESHOLD
-        release_threshold = self.config.CLICK_THRESHOLD * 1.5  # More forgiving release
+        release_threshold = self.config.CLICK_THRESHOLD * self._release_multiplier
         
         if not self._is_clicking:
             # Press down - use velocity for snappiness
-            approaching_fast = self._distance_velocity < -0.01
+            approaching_fast = self._distance_velocity < self._velocity_threshold
             at_threshold = pinch_distance < press_threshold
             
-            if at_threshold or (approaching_fast and pinch_distance < press_threshold * 1.2):
-                try:
-                    pyautogui.mouseDown()  # Press and HOLD
-                    self._is_clicking = True
-                except Exception as e:
-                    print(f"Error on mouseDown: {e}")
+            if at_threshold or (approaching_fast and pinch_distance < press_threshold * self._press_multiplier):
+                pyautogui.mouseDown()  # Press and HOLD
+                self._is_clicking = True
         else:
             # Release - only when fingers clearly separate
             if pinch_distance > release_threshold:
-                try:
-                    pyautogui.mouseUp()  # Release
-                    self._is_clicking = False
-                except Exception as e:
-                    print(f"Error on mouseUp: {e}")
+                pyautogui.mouseUp()  # Release
+                self._is_clicking = False

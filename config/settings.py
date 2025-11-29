@@ -9,14 +9,14 @@ class Config:
     
     # MediaPipe settings
     MODEL_COMPLEXITY = 0 
-    MIN_DETECTION_CONF = 0.5
-    MIN_TRACKING_CONF = 0.5
+    MIN_DETECTION_CONF = 0.4
+    MIN_TRACKING_CONF = 0.4 
     
     # Mouse control 
-    DEFAULT_SENSITIVITY = 3.0  
-    SMOOTHING = 0.20 
-    DEADZONE_X = 0.00  
-    DEADZONE_Y = 0.00
+    DEFAULT_SENSITIVITY = 3.0
+    SMOOTHING = 0.40 
+    DEADZONE_X = 0.001  
+    DEADZONE_Y = 0.001
     
     # Gesture thresholds
     CLICK_THRESHOLD = 0.05  
@@ -26,3 +26,7 @@ class Config:
     # GUI settings
     GUI_WIDTH = 600
     GUI_HEIGHT = 750
+    
+    # Performance settings
+    GUI_UPDATE_FPS = 30  
+    HAND_DETECTION_SKIP_FRAMES = 0  

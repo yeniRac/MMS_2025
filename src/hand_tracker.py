@@ -1,4 +1,4 @@
-"""Hand tracking with MediaPipe."""
+"""Hand tracking with MediaPipe - OPTIMIZED."""
 
 import cv2
 import mediapipe as mp
@@ -18,6 +18,11 @@ class HandTracker:
             min_tracking_confidence=config.MIN_TRACKING_CONF
         )
         self.cap: Optional[cv2.VideoCapture] = None
+        
+        # Frame skipping for performance
+        self.frame_skip = config.HAND_DETECTION_SKIP_FRAMES
+        self.frame_counter = 0
+        self._last_result = None
     
     def start(self) -> bool:
         """Initialize camera."""
@@ -39,10 +44,17 @@ class HandTracker:
         return (ret, cv2.flip(frame, 1)) if ret else (False, None)
     
     def detect_hand(self, frame: np.ndarray):
-        """Detect hand landmarks."""
+        """Detect hand landmarks with optional frame skipping."""
+        self.frame_counter += 1
+        
+        # Skip frames if enabled (return last result for smooth tracking)
+        if self.frame_skip > 0 and self.frame_counter % (self.frame_skip + 1) != 0:
+            return self._last_result
+        
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.hands.process(rgb)
-        return results.multi_hand_landmarks[0] if results.multi_hand_landmarks else None
+        self._last_result = results.multi_hand_landmarks[0] if results.multi_hand_landmarks else None
+        return self._last_result
     
     @staticmethod
     def get_pinch_distance(hand_landmarks) -> float:
