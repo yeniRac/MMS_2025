@@ -21,10 +21,10 @@ class StatusGUI:
         self.bg_secondary = (48, 49, 52)  # Lighter gray for sections
         self.bg_elevated = (60, 61, 64)  # Elevated elements
 
-        self.accent_primary = (66, 133, 244)  # Primary blue
-        self.accent_success = (66, 133, 244)  # Success - also blue
-        self.accent_warning = (66, 133, 244)  # Warning - also blue
-        self.accent_active = (66, 133, 244)  # Active state blue
+        self.accent_primary = (203, 167, 255)  # Light pink
+        self.accent_success = (203, 167, 255)  # Light pink
+        self.accent_warning = (203, 167, 255)  # Light pink
+        self.accent_active = (203, 167, 255)  # Light pink
         self.accent_disabled = (95, 99, 104)  # Disabled gray
 
         self.text_primary = (241, 243, 244)  # White text

@@ -3,8 +3,8 @@
 class Config:
     # Camera settings
     CAMERA_INDEX = 0
-    CAMERA_WIDTH = 960
-    CAMERA_HEIGHT = 720
+    CAMERA_WIDTH = 640
+    CAMERA_HEIGHT = 480
     CAMERA_FPS = 60
     
     # MediaPipe settings

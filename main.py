@@ -87,18 +87,19 @@ def main():
                     index_px = (int(index_pos.x * w), int(index_pos.y * h))
 
                     # Draw smaller circles for thumb and index
-                    circle_color = (0, 255, 0) if mouse._is_clicking else (66, 133, 244)
+                    circle_color = (0, 255, 0) if mouse._is_clicking else ((203, 167, 255))
                     cv2.circle(camera_frame, thumb_px, 6, circle_color, -1)  # REDUCED from 12 to 6
                     cv2.circle(camera_frame, index_px, 6, circle_color, -1)  # REDUCED from 12 to 6
                     cv2.circle(camera_frame, thumb_px, 6, (255, 255, 255), 1)  # REDUCED border thickness
                     cv2.circle(camera_frame, index_px, 6, (255, 255, 255), 1)  # REDUCED border thickness
 
                     # Draw thinner line between them
-                    line_color = (0, 255, 0) if mouse._is_clicking else (66, 133, 244)
+                    line_color = (0, 255, 0) if mouse._is_clicking else (203, 167, 255)
                     cv2.line(camera_frame, thumb_px, index_px, line_color, 2)  # REDUCED from 3 to 2
 
                 # Show camera feed window
                 cv2.imshow(gui.camera_window_name, camera_frame)
+                cv2.resizeWindow(gui.camera_window_name, config.CAMERA_WIDTH, config.CAMERA_HEIGHT)
 
             # Draw GUI (pass config values via gui object)
             gui_img = gui.draw_status(
