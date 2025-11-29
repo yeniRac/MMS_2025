@@ -14,7 +14,7 @@ class Config:
     
     # Mouse control 
     DEFAULT_SENSITIVITY = 3.0
-    SMOOTHING = 0.50 
+    SMOOTHING = 0.4
     DEADZONE_X = 0.002  
     DEADZONE_Y = 0.002
     
