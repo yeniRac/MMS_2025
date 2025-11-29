@@ -96,33 +96,6 @@ def main():
                     line_color = (0, 255, 0) if mouse._is_clicking else (66, 133, 244)
                     cv2.line(camera_frame, thumb_px, index_px, line_color, 2)  # REDUCED from 3 to 2
                     
-                    # Draw status info
-                    info_y = 30
-                    
-                    # Click indicator
-                    if mouse._is_clicking:
-                        cv2.putText(camera_frame, "CLICKING!", (10, info_y),
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
-                        info_y += 35
-                    
-                    # Distance indicator
-                    distance_text = f"Distance: {pinch_distance:.3f}"
-                    cv2.putText(camera_frame, distance_text, (10, info_y),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                    info_y += 25
-                    
-                    # Threshold indicator
-                    threshold_text = f"Threshold: {config.CLICK_THRESHOLD:.3f}"
-                    cv2.putText(camera_frame, threshold_text, (10, info_y),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1, cv2.LINE_AA)
-                    
-                    # Velocity indicator (for debugging)
-                    if mouse._distance_velocity is not None:
-                        velocity_text = f"Velocity: {mouse._distance_velocity:.4f}"
-                        velocity_color = (0, 255, 255) if mouse._distance_velocity < -0.01 else (200, 200, 200)
-                        cv2.putText(camera_frame, velocity_text, (10, h - 20),
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, velocity_color, 1, cv2.LINE_AA)
-                
                 # Show camera feed window
                 cv2.imshow(gui.camera_window_name, camera_frame)
             
@@ -137,7 +110,7 @@ def main():
             cv2.imshow(gui.window_name, gui_img)
             
             # Handle window events (works even when window is not focused)
-            key = gui.handle_window_events()
+            key = cv2.waitKey(1) & 0xFF
             
             if key == ord('q'):
                 break
