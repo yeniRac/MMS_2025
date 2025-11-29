@@ -15,12 +15,12 @@ class Config:
     # Mouse control 
     DEFAULT_SENSITIVITY = 3.0
     SMOOTHING = 0.4
-    DEADZONE_X = 0.002  
-    DEADZONE_Y = 0.002
+    DEADZONE_X = 0.001  
+    DEADZONE_Y = 0.001
     
     # MediaPipe Hand Landmarks:
     STABLE_LANDMARKS = [1, 2, 3, 4, 0, 5, 9, 13, 17]  # Thumb chain + stable anchors
-    STABLE_WEIGHTS = [2.0, 2.0, 2.5, 3.0, 1.5, 0.5, 1.0, 1.0, 1.0]  # Thumb tip = 3.0 weight
+    STABLE_WEIGHTS = [2.0, 2.0, 2.0, 3.0, 1.5, 0.5, 1.0, 1.0, 1.0]  # Thumb tip = 3.0 weight
     
     # Gesture thresholds
     CLICK_THRESHOLD = 0.05  
