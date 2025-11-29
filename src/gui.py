@@ -1,62 +1,67 @@
 """Professional GUI with clean, well-formatted design."""
 
+import time
+
 import cv2
 import numpy as np
-import time
+
 from config.settings import Config
 
 
 class StatusGUI:
+    """GUI for hand gesture mouse control status and settings."""
+
     def __init__(self, config: Config):
+        """Initialize the GUI with configuration."""
         self.config = config
         self.window_name = "Hand Gesture Mouse Control"
-        
+
         # Professional color scheme - consistent blues and grays
-        self.bg_primary = (32, 33, 36)           # Dark gray background
-        self.bg_secondary = (48, 49, 52)         # Lighter gray for sections
-        self.bg_elevated = (60, 61, 64)          # Elevated elements
-        
-        self.accent_primary = (66, 133, 244)     # Primary blue
-        self.accent_success = (66, 133, 244)     # Success - also blue for consistency
-        self.accent_warning = (66, 133, 244)     # Warning - also blue for consistency
-        self.accent_active = (66, 133, 244)      # Active state blue
-        self.accent_disabled = (95, 99, 104)     # Disabled gray
-        
-        self.text_primary = (241, 243, 244)      # White text
-        self.text_secondary = (154, 160, 166)    # Gray text
-        self.text_disabled = (95, 99, 104)       # Disabled text
-        
-        self.border_light = (95, 99, 104)        # Light borders
-        self.border_dark = (60, 64, 67)          # Dark borders
-        
+        self.bg_primary = (32, 33, 36)  # Dark gray background
+        self.bg_secondary = (48, 49, 52)  # Lighter gray for sections
+        self.bg_elevated = (60, 61, 64)  # Elevated elements
+
+        self.accent_primary = (66, 133, 244)  # Primary blue
+        self.accent_success = (66, 133, 244)  # Success - also blue
+        self.accent_warning = (66, 133, 244)  # Warning - also blue
+        self.accent_active = (66, 133, 244)  # Active state blue
+        self.accent_disabled = (95, 99, 104)  # Disabled gray
+
+        self.text_primary = (241, 243, 244)  # White text
+        self.text_secondary = (154, 160, 166)  # Gray text
+        self.text_disabled = (95, 99, 104)  # Disabled text
+
+        self.border_light = (95, 99, 104)  # Light borders
+        self.border_dark = (60, 64, 67)  # Dark borders
+
         # Window dimensions - larger and more comfortable
         self.width = 500
         self.height = 820
-        
+
         # Layout constants
         self.margin = 24
         self.section_spacing = 20
         self.item_spacing = 28
-        
+
         # FPS tracking
         self.fps = 0.0
         self.frame_count = 0
         self.last_time = time.time()
-        
+
         # Camera feed state
         self.show_camera = False
         self.camera_window_name = "Camera Feed"
-        
+
         # Interactive elements state
         self.camera_button_rect = None
         self.button_hovered = False
         self.dragging_slider = None
-        
+
         # Double-click tracking for sliders
         self.last_click_time = 0
         self.last_clicked_slider = None
         self.double_click_threshold = 0.5  # seconds
-        
+
         # Slider configuration
         self.sliders = {
             'sensitivity': {
@@ -96,13 +101,96 @@ class StatusGUI:
                 'description': 'Pinch distance to click'
             }
         }
-    
+
+        # Audio feedback setup
+        self.audio_enabled = True
+        try:
+            import pygame
+            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            self.pygame = pygame
+            # Generate toggle sounds
+            self._generate_toggle_sounds()
+        except ImportError:
+            self.audio_enabled = False
+            self.pygame = None
+            print("pygame not available - audio feedback disabled")
+        except Exception as e:
+            self.audio_enabled = False
+            self.pygame = None
+            print(f"Could not initialize audio: {e}")
+
+        # Track last enabled state to detect toggle
+        self.last_enabled_state = None
+            
     def create_window(self):
         """Create and configure the GUI window."""
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(self.window_name, self.width, self.height)
         cv2.setMouseCallback(self.window_name, self._mouse_callback)
     
+    def _generate_toggle_sounds(self):
+        """Generate sounds for enable/disable toggle."""
+        import numpy as np
+        
+        sample_rate = 22050
+        
+        # Enable sound (rising two-tone beep)
+        duration = 0.15
+        samples = int(sample_rate * duration)
+        t = np.linspace(0, duration, samples, False)
+        
+        # First tone (lower)
+        freq1 = 800
+        wave1 = np.sin(2 * np.pi * freq1 * t[:samples//2])
+        
+        # Second tone (higher)
+        freq2 = 1200
+        wave2 = np.sin(2 * np.pi * freq2 * t[samples//2:])
+        
+        # Combine
+        wave_enable = np.concatenate([wave1, wave2])
+        
+        # Apply envelope
+        envelope = np.exp(-3 * t)
+        wave_enable *= envelope
+        
+        # Convert to 16-bit audio
+        audio_enable = np.array(wave_enable * 32767, dtype=np.int16)
+        stereo_enable = np.column_stack((audio_enable, audio_enable))
+        
+        # Disable sound (falling two-tone beep)
+        wave1_disable = np.sin(2 * np.pi * freq2 * t[:samples//2])
+        wave2_disable = np.sin(2 * np.pi * freq1 * t[samples//2:])
+        wave_disable = np.concatenate([wave1_disable, wave2_disable])
+        wave_disable *= envelope
+        
+        audio_disable = np.array(wave_disable * 32767, dtype=np.int16)
+        stereo_disable = np.column_stack((audio_disable, audio_disable))
+        
+        # Create pygame Sound objects
+        self.enable_sound = self.pygame.sndarray.make_sound(stereo_enable)
+        self.enable_sound.set_volume(0.4)  # 40% volume
+        
+        self.disable_sound = self.pygame.sndarray.make_sound(stereo_disable)
+        self.disable_sound.set_volume(0.4)  # 40% volume
+
+    def play_toggle_sound(self, enabled: bool):
+        """Play sound when mouse control is toggled."""
+        if not self.audio_enabled or not self.pygame:
+            return
+        
+        # Check if state has changed
+        if self.last_enabled_state is not None and self.last_enabled_state != enabled:
+            try:
+                if enabled:
+                    self.enable_sound.play()
+                else:
+                    self.disable_sound.play()
+            except:
+                pass
+        
+        self.last_enabled_state = enabled
+
     def update_fps(self):
         """Update frames per second calculation."""
         self.frame_count += 1
@@ -235,8 +323,8 @@ class StatusGUI:
     # =========================================================================
     
     def draw_status(self, enabled: bool, hand_detected: bool,
-                   pinch_distance: float = 0.0, is_clicking: bool = False,
-                   toggle_progress: float = 0.0) -> np.ndarray:
+                pinch_distance: float = 0.0, is_clicking: bool = False,
+                toggle_progress: float = 0.0) -> np.ndarray:
         """
         Draw the complete GUI with all status information.
         
@@ -250,9 +338,11 @@ class StatusGUI:
         Returns:
             NumPy array containing the rendered GUI image
         """
+        # Play audio feedback when toggle state changes
+        self.play_toggle_sound(enabled)
+        
         # Create canvas
         canvas = np.full((self.height, self.width, 3), self.bg_primary, dtype=np.uint8)
-        
         y = self.margin
         
         # Draw header

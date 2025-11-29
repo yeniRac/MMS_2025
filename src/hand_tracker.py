@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional, Tuple
 from config.settings import Config
 
+
 class HandTracker:
     def __init__(self, config: Config):
         self.config = config
