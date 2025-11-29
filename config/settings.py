@@ -24,7 +24,7 @@ class Config:
     
     # Gesture thresholds
     CLICK_THRESHOLD = 0.05  
-    TOGGLE_THRESHOLD = 0.20
+    TOGGLE_THRESHOLD = 0.30
     TOGGLE_DURATION = 2.0
     
     # GUI settings
