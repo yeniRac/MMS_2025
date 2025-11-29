@@ -3,18 +3,18 @@
 class Config:
     # Camera settings
     CAMERA_INDEX = 0
-    CAMERA_WIDTH = 480
-    CAMERA_HEIGHT = 360
-    CAMERA_FPS = 60
+    CAMERA_WIDTH = 960
+    CAMERA_HEIGHT = 720
+    CAMERA_FPS = 120
     
     # MediaPipe settings
     MODEL_COMPLEXITY = 0 
-    MIN_DETECTION_CONF = 0.4
-    MIN_TRACKING_CONF = 0.4 
+    MIN_DETECTION_CONF = 0.5
+    MIN_TRACKING_CONF = 0.5
     
     # Mouse control 
     DEFAULT_SENSITIVITY = 3.0
-    SMOOTHING = 0.40 
+    SMOOTHING = 0.50 
     DEADZONE_X = 0.001  
     DEADZONE_Y = 0.001
     
@@ -29,4 +29,7 @@ class Config:
     
     # Performance settings
     GUI_UPDATE_FPS = 30  
-    HAND_DETECTION_SKIP_FRAMES = 0  
+    HAND_DETECTION_SKIP_FRAMES = 0
+
+    # Advanced settings
+    ENABLE_PREDICTION = True 
