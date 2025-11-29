@@ -35,8 +35,8 @@ class StatusGUI:
         self.border_dark = (60, 64, 67)  # Dark borders
 
         # Window dimensions - larger and more comfortable
-        self.width = 500
-        self.height = 820
+        self.width = 510
+        self.height = 830
 
         # Layout constants
         self.margin = 24
@@ -645,8 +645,13 @@ class StatusGUI:
         # Thumb
         thumb_x = slider_x + filled_width
         thumb_y = track_y + track_height // 2
-        cv2.circle(canvas, (thumb_x, thumb_y), 8, slider_color, -1)
-        cv2.circle(canvas, (thumb_x, thumb_y), 8, self.text_primary, 2)
+        thumb_size = 16
+        cv2.rectangle(canvas, (thumb_x - thumb_size//2, thumb_y - thumb_size//2),
+             (thumb_x + thumb_size//2, thumb_y + thumb_size//2),
+             slider_color, -1)
+        cv2.rectangle(canvas, (thumb_x - thumb_size//2, thumb_y - thumb_size//2),
+             (thumb_x + thumb_size//2, thumb_y + thumb_size//2),
+             self.text_primary, 2)
         
         # Value display
         value_text = f"{slider['value']:.2f}"
