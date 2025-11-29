@@ -85,17 +85,36 @@ class MouseController:
         self._toggle_completed = False
         self.toggle_progress = 0.0
     
+    def _get_stable_position(self, hand_landmarks) -> tuple[float, float]:
+        """
+        Get position from stable landmarks that DON'T move during pinch gestures.
+        Excludes thumb (1-4) and index finger (5-8) to avoid click-induced jitter.
+        Uses middle, ring, pinky fingers + wrist for rock-solid tracking.
+        """
+        landmarks = self.config.STABLE_LANDMARKS
+        weights = self.config.STABLE_WEIGHTS
+        
+        x_sum = 0.0
+        y_sum = 0.0
+        weight_sum = 0.0
+        
+        for idx, weight in zip(landmarks, weights):
+            landmark = hand_landmarks.landmark[idx]
+            x_sum += landmark.x * weight
+            y_sum += landmark.y * weight
+            weight_sum += weight
+        
+        return x_sum / weight_sum, y_sum / weight_sum
+    
     def move_cursor(self, hand_landmarks):
-        """Move cursor using RELATIVE movement (like a real mouse)."""
+        """Move cursor using RELATIVE movement with stable (non-pinching) landmarks."""
         if not self.enabled or self._toggle_in_progress:
             return
         
-        # Get thumb position (normalized 0-1)
-        thumb = hand_landmarks.landmark[4]
-        current_x = thumb.x
-        current_y = thumb.y
+        # Get position from landmarks that don't move during pinch
+        current_x, current_y = self._get_stable_position(hand_landmarks)
         
-       # If first frame, initialize and don't move
+        # If first frame, initialize and don't move
         if self._last_x is None:
             self._last_x = current_x
             self._last_y = current_y
@@ -125,7 +144,6 @@ class MouseController:
         move_y = self._smoothed_dy * self.screen_h * self.config.DEFAULT_SENSITIVITY
         
         # Apply movement (relative to current position)
-        # Removed try-except for performance - FAILSAFE=False makes this safe
         pyautogui.moveRel(int(move_x), int(move_y), duration=0, _pause=False)
     
     def handle_click(self, pinch_distance: float):
