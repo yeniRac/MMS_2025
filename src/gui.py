@@ -376,7 +376,7 @@ class StatusGUI:
     
     def _draw_header(self, canvas: np.ndarray, y: int) -> int:
         """Draw the header section."""
-        y += 8
+        y += 12
         
         self._draw_text(canvas, "Hand Gesture Mouse Control",
                        self.margin, y, self.text_primary, 0.8, 2)
