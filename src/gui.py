@@ -27,7 +27,7 @@ class StatusGUI:
         self.accent_active = (163, 127, 215)  # Light pink
         self.accent_disabled = (95, 99, 104)  # Disabled gray
 
-        self.text_primary = (241, 243, 244)  # White text
+        self.text_primary = (154, 160, 166)  # White text
         self.text_secondary = (154, 160, 166)  # Gray text
         self.text_disabled = (95, 99, 104)  # Disabled text
 
