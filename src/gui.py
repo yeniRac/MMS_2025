@@ -550,11 +550,9 @@ class StatusGUI:
                     x: int, y: int, width: int, height: int):
         """Draw a button with hover and active states."""
         # Determine button appearance
-        if self.show_camera:
-            bg_color = self.accent_primary
-            border_color = self.accent_primary
-            text_color = self.text_primary
-        elif self.button_hovered:
+
+        # Determine button appearance
+        if self.button_hovered:
             bg_color = self.bg_elevated
             border_color = self.accent_primary
             text_color = self.accent_primary
@@ -594,14 +592,6 @@ class StatusGUI:
             
             cv2.rectangle(canvas, (x, y), (x + filled_width, y + height),
                          fill_color, -1)
-        
-        # Percentage text
-        percentage_text = f"{int(progress * 100)}%"
-        text_size = cv2.getTextSize(percentage_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0]
-        text_x = x + (width - text_size[0]) // 2
-        text_y = y + (height + text_size[1]) // 2
-        self._draw_text(canvas, percentage_text, text_x, text_y,
-                       self.text_primary, 0.5, 1)
         
         return y + height
     
