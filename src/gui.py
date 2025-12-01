@@ -22,7 +22,7 @@ class StatusGUI:
         self.bg_elevated = (60, 61, 64)  # Elevated elements
 
         self.accent_primary = (163, 127, 215)  # Light pink
-        self.accent_success = (1163, 127, 215)  # Light pink
+        self.accent_success = (163, 127, 215)  # Light pink
         self.accent_warning = (163, 127, 215)  # Light pink
         self.accent_active = (163, 127, 215)  # Light pink
         self.accent_disabled = (95, 99, 104)  # Disabled gray
@@ -415,16 +415,15 @@ class StatusGUI:
                                    "Detected" if hand_detected else "Searching",
                                    self.accent_primary if hand_detected else self.accent_disabled)
         
-        # Pinch distance
-        pinch_text = f"{pinch_distance:.3f}" if hand_detected else "---"
-        pinch_color = self.accent_primary if is_clicking else self.accent_disabled
-        y = self._draw_status_item(canvas, "Finger Distance", y, pinch_text, pinch_color)
-        
-        # Click indicator
+       # Pinch distance or Click indicator
         if is_clicking:
-            indicator_x = self.width - self.margin - 100
-            self._draw_pill(canvas, "CLICKING", indicator_x, y - self.item_spacing + 5,
-                          self.accent_primary, self.text_primary)
+            pinch_text = "Click!"
+            pinch_color = self.accent_primary
+        else:
+            pinch_text = f"{pinch_distance:.3f}" if hand_detected else "---"
+            pinch_color = self.accent_disabled
+
+        y = self._draw_status_item(canvas, "Finger Distance", y, pinch_text, pinch_color)
         
         y += 4
         self._draw_separator(canvas, y)
